@@ -26,8 +26,6 @@ func (t ToDoView) Ws(c *gin.Context) {
 	}
 	defer ws.Close()
 
-	// goods := models.Goods{}
-	// goods, err = goods.GetAllGoods(ctx, client)
 	if err != nil {
 
 		return
@@ -73,7 +71,7 @@ func (t ToDoView) Load(c *gin.Context) {
 func (t ToDoView) Add(c *gin.Context) {
 	todo := models.ToDo{}
 	if err := c.Bind(&todo); err != nil {
-		log.Printf("Failed bindjson with Goods: %v\n", err)
+		log.Printf("Failed bindjson with todo: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"err": "Error Get Body",
 		})

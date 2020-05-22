@@ -19,11 +19,12 @@ var (
 )
 
 type ToDo struct {
-	ID       primitive.ObjectID "_id"
-	Desc     string             `json:"Desc",bson:"Desc"`
-	Imgs     string             `json:"Img",bson:"Img"`
-	Done     bool               `json:"Done",bson:"Done"`
-	Deadline string             `json:"Deadline",bson:"Deadline"`
+	// ID       string `json:"ID",bson:"ID"`
+	Desc     string             `json:"Desc" bson:"Desc"`
+	Imgs     string             `json:"Img" bson:"Img"`
+	Done     bool               `json:"Done" bson:"Done"`
+	Deadline string             `json:"Deadline" bson:"Deadline"`
+	ID       primitive.ObjectID `json:"_id" bson:"_id"`
 }
 
 func GetClient() (*mongo.Client, context.Context) {
@@ -89,6 +90,7 @@ func (t ToDo) DeleteRecord(db *mongo.Client, id string) (r *mongo.DeleteResult, 
 	if err != nil {
 		log.Fatal(err)
 	}
+	// r, err = db.Database(dbname).Collection(collectionname).DeleteOne(ctxB, bson.M{"ID": id})
 	r, err = db.Database(dbname).Collection(collectionname).DeleteOne(ctxB, bson.M{"_id": _id})
 	if err != nil {
 		log.Printf("db delete record err: %s\n", err.Error())
