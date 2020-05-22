@@ -85,6 +85,7 @@ func (t ToDoView) Add(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"err": "new todo invalid data",
 		})
+		return
 	}
 
 	db, ctx := models.GetClient()

@@ -85,7 +85,11 @@ func (t ToDo) UpateRecord(db *mongo.Client, td ToDo) (r *mongo.UpdateResult, err
 }
 
 func (t ToDo) DeleteRecord(db *mongo.Client, id string) (r *mongo.DeleteResult, err error) {
-	r, err = db.Database(dbname).Collection(collectionname).DeleteOne(ctxB, bson.M{"_id": id})
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	r, err = db.Database(dbname).Collection(collectionname).DeleteOne(ctxB, bson.M{"_id": _id})
 	if err != nil {
 		log.Printf("db delete record err: %s\n", err.Error())
 		return
