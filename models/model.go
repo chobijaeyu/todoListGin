@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"log"
+	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -95,6 +96,30 @@ func (t ToDo) DeleteRecord(db *mongo.Client, id string) (r *mongo.DeleteResult, 
 	if err != nil {
 		log.Printf("db delete record err: %s\n", err.Error())
 		return
+	}
+	return
+}
+
+func (t ToDo) QueryRecord(db *mongo.Client, q, p string) (tlist []*ToDo, err error) {
+	log.Println(q, p)
+	_p, err := strconv.ParseBool(p)
+	if err != nil {
+		log.Println("strconv.ParseBool(p) failure")
+		return nil, err
+	}
+	cur, err := db.Database(dbname).Collection(collectionname).Find(ctxB, bson.M{q: _p})
+	if err != nil {
+		log.Printf("Error on Finding all the documents:%s\n", err.Error())
+		return
+	}
+	for cur.Next(context.TODO()) {
+		var _t ToDo
+		err = cur.Decode(&_t)
+		if err != nil {
+			log.Printf("Error on Decoding the document:%s\n", err.Error())
+			return
+		}
+		tlist = append(tlist, &_t)
 	}
 	return
 }

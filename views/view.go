@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
@@ -51,7 +52,29 @@ func (t ToDoView) Load(c *gin.Context) {
 	db, ctx := models.GetClient()
 	defer db.Disconnect(ctx)
 
-	r, err := todo.LoadRecord(db)
+	q := c.Query("query")
+	p := c.Query("param")
+
+	if q == "" && p == "" {
+		log.Printf("not query get request")
+		r, err := todo.LoadRecord(db)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{
+				"err": err.Error(),
+			})
+			return
+		}
+		if len(r) == 0 {
+			c.JSON(http.StatusNoContent, gin.H{
+				"err": "no content",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, r)
+		return
+	}
+	r, err := todo.QueryRecord(db, q, p)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"err": err.Error(),
@@ -59,7 +82,7 @@ func (t ToDoView) Load(c *gin.Context) {
 		return
 	}
 	if len(r) == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
+		c.JSON(http.StatusNoContent, gin.H{
 			"err": "no content",
 		})
 		return
@@ -88,18 +111,15 @@ func (t ToDoView) Add(c *gin.Context) {
 
 	db, ctx := models.GetClient()
 	defer db.Disconnect(ctx)
-
-	r, err := todo.AddRecord(db, todo)
+	todo.ID = primitive.NewObjectID()
+	_, err := todo.AddRecord(db, todo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"err": err.Error(),
 		})
 		return
 	}
-
-	c.JSON(http.StatusCreated, gin.H{
-		"res": r,
-	})
+	c.JSON(http.StatusCreated, todo)
 
 }
 
