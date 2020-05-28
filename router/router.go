@@ -19,8 +19,9 @@ func Router(r *gin.Engine) *gin.Engine {
 	t := views.ToDoView{}
 	toDoRouters := r.Group("todo")
 	toDoRouters.GET("", t.Load)
+	toDoRouters.GET("/ws", t.Ws)
 	toDoRouters.POST("", t.Add)
-	toDoRouters.PATCH(":id", t.Update)
+	toDoRouters.PUT(":id", t.Update)
 	toDoRouters.DELETE(":id", t.Delete)
 
 	return r

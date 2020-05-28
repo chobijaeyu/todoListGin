@@ -14,6 +14,9 @@ var (
 	upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
 	}
 )
 
@@ -23,24 +26,41 @@ func (t ToDoView) Ws(c *gin.Context) {
 	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	// ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
+		log.Printf("ws upgrader error:$s\n", err.Error())
 		return
 	}
+	defer log.Println("ws closed")
 	defer ws.Close()
+	var (
+		mt      = 1
+		todo    = models.ToDo{}
+		db, ctx = models.GetClient()
+		docChan = make(chan []byte, 10)
+	)
 
-	if err != nil {
+	defer db.Disconnect(ctx)
 
-		return
-	}
+	go todo.WsRecord(db, docChan)
+	log.Println("ws db")
+
+	go func() {
+		for {
+			mt, _, err = ws.ReadMessage()
+			if err != nil {
+				log.Println("ws read message err", err.Error())
+				break
+			}
+		}
+	}()
+
 	for {
-		mt, message, err := ws.ReadMessage()
-		if err != nil {
+		d, ok := <-docChan
+		if !ok {
 			break
 		}
-		if string(message) == "ping" {
-			message = []byte("pong")
-		}
-		err = ws.WriteMessage(mt, message)
+		err = ws.WriteMessage(mt, d)
 		if err != nil {
+			log.Println(err.Error())
 			break
 		}
 	}
@@ -87,7 +107,6 @@ func (t ToDoView) Load(c *gin.Context) {
 		})
 		return
 	}
-
 	c.JSON(http.StatusOK, r)
 }
 

@@ -78,7 +78,8 @@ func (t ToDo) LoadRecord(db *mongo.Client) (tlist []*ToDo, err error) {
 }
 
 func (t ToDo) UpateRecord(db *mongo.Client, td ToDo) (r *mongo.UpdateResult, err error) {
-	r, err = db.Database(dbname).Collection(collectionname).UpdateOne(ctxB, bson.M{"_id": t.ID}, td)
+	update := bson.D{{"$set", td}}
+	r, err = db.Database(dbname).Collection(collectionname).UpdateOne(ctxB, bson.M{"_id": t.ID}, update)
 	if err != nil {
 		log.Printf("db update record err: %s\n", err.Error())
 		return
@@ -122,4 +123,31 @@ func (t ToDo) QueryRecord(db *mongo.Client, q, p string) (tlist []*ToDo, err err
 		tlist = append(tlist, &_t)
 	}
 	return
+}
+
+func (t ToDo) WsRecord(db *mongo.Client, docChan chan []byte) {
+	var (
+		ctx = context.TODO()
+	)
+
+	// matchStage := bson.D{{"$match", bson.D{{"operationType", "insert"}}}}
+	opts := options.ChangeStream().SetMaxAwaitTime(2 * time.Second).SetFullDocument(options.UpdateLookup)
+	cs, err := db.Database(dbname).Collection(collectionname).Watch(ctx, mongo.Pipeline{}, opts)
+	if err != nil {
+		log.Println("cs err:", err.Error())
+		return
+	}
+	defer cs.Close(ctx)
+	defer close(docChan)
+	for cs.Next(context.TODO()) {
+		// var _t ToDo
+		// err := cs.Current.Lookup("fullDocument").Unmarshal(&_t)
+		// if err != nil {
+		// 	log.Println("cs json err:", err.Error())
+		// 	log.Println(cs.Current.String())
+		// 	continue
+		// }
+		// inrec, _ := json.Marshal(&_t)
+		docChan <- []byte(cs.Current.String())
+	}
 }
